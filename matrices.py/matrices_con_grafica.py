@@ -38,7 +38,14 @@ class MatrizApp:
             ("Producto Punto", self.producto_punto),
             ("Producto Cruz", self.producto_cruz),
             ("Magnitud y Dirección", self.magnitud_direccion),
-            ("Graficar Vectores", self.graficar_vectores)
+            ("Graficar Vectores", self.graficar_vectores),
+("Transformación Cero", self.transformacion_cero),
+            ("Transformación Identidad", self.transformacion_identidad),
+            ("Reflexión eje X", self.reflexion_eje_x),
+            ("Reflexión eje Y", self.reflexion_eje_y),
+            ("Rotación", self.rotacion),
+            ("Escala", self.escalamiento),
+            ("Traslación", self.traslacion),
         ]
 
         for texto, comando in botones:
@@ -264,7 +271,95 @@ class MatrizApp:
 
 
 
+
+    def transformacion_cero(self):
+        if self.vector_a is not None:
+            transformado = np.array([0, 0])
+            self._graficar_transformacion(self.vector_a, transformado, "Transformación Cero")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def transformacion_identidad(self):
+        if self.vector_a is not None:
+            transformado = self.vector_a.copy()
+            self._graficar_transformacion(self.vector_a, transformado, "Transformación Identidad")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def reflexion_eje_x(self):
+        if self.vector_a is not None:
+            transformado = np.array([self.vector_a[0], -self.vector_a[1]])
+            self._graficar_transformacion(self.vector_a, transformado, "Reflexión sobre eje X")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def reflexion_eje_y(self):
+        if self.vector_a is not None:
+            transformado = np.array([-self.vector_a[0], self.vector_a[1]])
+            self._graficar_transformacion(self.vector_a, transformado, "Reflexión sobre eje Y")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def rotacion(self):
+        if self.vector_a is not None:
+            angulo = simpledialog.askfloat("Rotación", "Ingrese el ángulo de rotación (grados antihorario):")
+            rad = np.radians(angulo)
+            rot_matrix = np.array([[np.cos(rad), -np.sin(rad)], [np.sin(rad), np.cos(rad)]])
+            transformado = rot_matrix @ self.vector_a
+            self._graficar_transformacion(self.vector_a, transformado, f"Rotación de {angulo}°")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def escalamiento(self):
+        if self.vector_a is not None:
+            esc_x = simpledialog.askfloat("Escalamiento", "Ingrese el factor de escala en X:")
+            esc_y = simpledialog.askfloat("Escalamiento", "Ingrese el factor de escala en Y:")
+            esc_matrix = np.array([[esc_x, 0], [0, esc_y]])
+            transformado = esc_matrix @ self.vector_a
+            self._graficar_transformacion(self.vector_a, transformado, "Transformación de Escala")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def traslacion(self):
+        if self.vector_a is not None:
+            dx = simpledialog.askfloat("Traslación", "Ingrese el desplazamiento en X:")
+            dy = simpledialog.askfloat("Traslación", "Ingrese el desplazamiento en Y:")
+            transformado = self.vector_a + np.array([dx, dy])
+            self._graficar_transformacion(self.vector_a, transformado, "Traslación")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def _graficar_transformacion(self, original, transformado, titulo):
+        plt.figure()
+        ax = plt.gca()
+        ax.axhline(0, color='black', linewidth=1)
+        ax.axvline(0, color='black', linewidth=1)
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        ax.quiver(0, 0, original[0], original[1], angles='xy', scale_units='xy', scale=1, color='r', label='Vector Original')
+        ax.plot(original[0], original[1], 'ro')
+        ax.text(original[0], original[1], f" A({original[0]:.2f}, {original[1]:.2f})", color='r')
+
+        ax.quiver(0, 0, transformado[0], transformado[1], angles='xy', scale_units='xy', scale=1, color='g', label='Transformado')
+        ax.plot(transformado[0], transformado[1], 'go')
+        ax.text(transformado[0], transformado[1], f" T({transformado[0]:.2f}, {transformado[1]:.2f})", color='g')
+
+        limites = np.max(np.abs([original, transformado])) + 2
+        ax.set_xlim(-limites, limites)
+        ax.set_ylim(-limites, limites)
+
+        ax.set_aspect('equal')
+        ax.set_xlabel("Eje X")
+        ax.set_ylabel("Eje Y")
+        plt.title(titulo)
+        plt.legend()
+        plt.show()
+
+
+    
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = MatrizApp(root)
     root.mainloop()
+
