@@ -1,16 +1,22 @@
+
 import tkinter as tk
 from tkinter import simpledialog, messagebox, scrolledtext
 import numpy as np
+import matplotlib.pyplot as plt
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class MatrizApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Operaciones con Matrices")
+        self.root.title("Operaciones con Matrices y Vectores")
         
         self.matriz_a = None
         self.matriz_b = None
+        self.vector_a = None
+        self.vector_b = None
 
-        tk.Label(root, text="Operaciones con Matrices", font=("Helvetica", 16, "bold")).pack(pady=10)
+        tk.Label(root, text="Operaciones con Matrices y Vectores", font=("Helvetica", 16, "bold")).pack(pady=10)
         
         btn_frame = tk.Frame(root)
         btn_frame.pack()
@@ -23,13 +29,22 @@ class MatrizApp:
             ("Det. Sarrus (3x3)", self.det_sarrus),
             ("Det. Cofactores", self.det_cofactores),
             ("Inversa", self.inversa),
-            ("Método de Cramer", self.metodo_cramer)
+            ("Método de Cramer", self.metodo_cramer),
+            ("Crear Vector A", self.crear_vector_a),
+            ("Crear Vector B", self.crear_vector_b),
+            ("Suma de Vectores", self.suma_vectores),
+            ("Resta de Vectores", self.resta_vectores),
+            ("Escalar por Vector A", self.escalar_por_vector),
+            ("Producto Punto", self.producto_punto),
+            ("Producto Cruz", self.producto_cruz),
+            ("Magnitud y Dirección", self.magnitud_direccion),
+            ("Graficar Vectores", self.graficar_vectores)
         ]
 
         for texto, comando in botones:
-            tk.Button(btn_frame, text=texto, width=18, command=comando).pack(pady=2)
+            tk.Button(btn_frame, text=texto, width=25, command=comando).pack(pady=2)
         
-        self.resultado_area = scrolledtext.ScrolledText(root, width=70, height=20)
+        self.resultado_area = scrolledtext.ScrolledText(root, width=80, height=20)
         self.resultado_area.pack(pady=10)
 
     def mostrar_matriz(self, matriz, nombre):
@@ -117,41 +132,137 @@ class MatrizApp:
         else:
             messagebox.showinfo("Falta información", "Primero crea la matriz A.")
 
-def metodo_cramer(self):
-    if self.matriz_a:
-        try:
-            coef = np.array(self.matriz_a)
-            n = coef.shape[0]
-            if coef.shape[0] != coef.shape[1]:
-                messagebox.showerror("Error", "La matriz A debe ser cuadrada.")
-                return
+    def metodo_cramer(self):
+        if self.matriz_a:
+            try:
+                coef = np.array(self.matriz_a)
+                n = coef.shape[0]
+                if coef.shape[0] != coef.shape[1]:
+                    messagebox.showerror("Error", "La matriz A debe ser cuadrada.")
+                    return
 
-            constantes = [simpledialog.askfloat("Cramer", f"Ingrese el término independiente para la ecuación {i+1}:") for i in range(n)]
-            b = np.array(constantes)
+                constantes = [simpledialog.askfloat("Cramer", f"Ingrese el término independiente para la ecuación {i+1}:") for i in range(n)]
+                b = np.array(constantes)
 
-            det_a = round(np.linalg.det(coef), 4)
-            self.resultado_area.insert(tk.END, f"\n\nDeterminante de A: {det_a:.4f}\n")
+                det_a = round(np.linalg.det(coef), 4)
+                self.resultado_area.insert(tk.END, f"\n\nDeterminante de A: {det_a:.4f}\n")
 
-            if det_a == 0:
-                self.resultado_area.insert(tk.END, "El sistema no tiene solución única (det(A) = 0)\n")
-                return
+                if det_a == 0:
+                    self.resultado_area.insert(tk.END, "El sistema no tiene solución única (det(A) = 0)\n")
+                    return
 
-            soluciones = []
-            for i in range(n):
-                matriz_modificada = np.copy(coef)
-                matriz_modificada[:, i] = b
-                det_i = round(np.linalg.det(matriz_modificada), 4)
-                xi = det_i / det_a
-                self.resultado_area.insert(tk.END, f"Determinante D{i+1} = {det_i:.4f}\n")
-                soluciones.append(xi)
+                soluciones = []
+                for i in range(n):
+                    matriz_modificada = np.copy(coef)
+                    matriz_modificada[:, i] = b
+                    det_i = round(np.linalg.det(matriz_modificada), 4)
+                    xi = det_i / det_a
+                    self.resultado_area.insert(tk.END, f"Determinante D{i+1} = {det_i:.4f}\n")
+                    soluciones.append(xi)
 
-            for i, xi in enumerate(soluciones):
-                self.resultado_area.insert(tk.END, f"x{i+1} = {xi:.4f}\n")
+                for i, xi in enumerate(soluciones):
+                    self.resultado_area.insert(tk.END, f"x{i+1} = {xi:.4f}\n")
 
-        except Exception as e:
-            messagebox.showerror("Error", f"No se puede aplicar Cramer: {e}")
-    else:
-        messagebox.showinfo("Falta información", "Primero crea la matriz A.")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se puede aplicar Cramer: {e}")
+        else:
+            messagebox.showinfo("Falta información", "Primero crea la matriz A.")
+
+    # ==== VECTORES ====
+
+    def crear_vector_a(self):
+        longitud = simpledialog.askinteger("Vector A", "Ingrese la dimensión del vector A:")
+        self.vector_a = np.array([simpledialog.askfloat("Vector A", f"A[{i+1}] = ") for i in range(longitud)])
+        self.resultado_area.insert(tk.END, f"\nVector A: {self.vector_a}\n")
+
+    def crear_vector_b(self):
+        longitud = simpledialog.askinteger("Vector B", "Ingrese la dimensión del vector B:")
+        self.vector_b = np.array([simpledialog.askfloat("Vector B", f"B[{i+1}] = ") for i in range(longitud)])
+        self.resultado_area.insert(tk.END, f"\nVector B: {self.vector_b}\n")
+
+    def suma_vectores(self):
+        if self.vector_a is not None and self.vector_b is not None:
+            resultado = self.vector_a + self.vector_b
+            self.resultado_area.insert(tk.END, f"\nA + B = {resultado}\n")
+        else:
+            messagebox.showinfo("Falta información", "Primero define los vectores A y B.")
+
+    def resta_vectores(self):
+        if self.vector_a is not None and self.vector_b is not None:
+            resultado = self.vector_a - self.vector_b
+            self.resultado_area.insert(tk.END, f"\nA - B = {resultado}\n")
+        else:
+            messagebox.showinfo("Falta información", "Primero define los vectores A y B.")
+
+    def escalar_por_vector(self):
+        if self.vector_a is not None:
+            escalar = simpledialog.askfloat("Escalar", "Ingrese el escalar a multiplicar por A:")
+            resultado = escalar * self.vector_a
+            self.resultado_area.insert(tk.END, f"\n{escalar} * A = {resultado}\n")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    def producto_punto(self):
+        if self.vector_a is not None and self.vector_b is not None:
+            resultado = np.dot(self.vector_a, self.vector_b)
+            self.resultado_area.insert(tk.END, f"\nA · B = {resultado}\n")
+        else:
+            messagebox.showinfo("Falta información", "Primero define los vectores A y B.")
+
+    def producto_cruz(self):
+        if self.vector_a is not None and self.vector_b is not None and len(self.vector_a) == 3 and len(self.vector_b) == 3:
+            resultado = np.cross(self.vector_a, self.vector_b)
+            self.resultado_area.insert(tk.END, f"\nA × B = {resultado}\n")
+        else:
+            messagebox.showinfo("Error", "Los vectores deben ser de dimensión 3.")
+
+    def magnitud_direccion(self):
+        if self.vector_a is not None:
+            magnitud = np.linalg.norm(self.vector_a)
+            direccion = self.vector_a / magnitud if magnitud != 0 else "No definida"
+            self.resultado_area.insert(tk.END, f"\n||A|| = {magnitud:.4f}, Dirección = {direccion}\n")
+        else:
+            messagebox.showinfo("Falta información", "Primero define el vector A.")
+
+    
+    
+    def graficar_vectores(self):
+        if self.vector_a is not None:
+            plt.figure()
+            ax = plt.gca()
+            ax.axhline(0, color='black', linewidth=1)
+            ax.axvline(0, color='black', linewidth=1)
+            ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+            # Dibujar Vector A
+            ax.quiver(0, 0, self.vector_a[0], self.vector_a[1], angles='xy', scale_units='xy', scale=1, color='r', label='Vector A')
+            ax.plot(self.vector_a[0], self.vector_a[1], 'ro')  # Punto final de Vector A
+            ax.text(self.vector_a[0], self.vector_a[1], f" A({self.vector_a[0]}, {self.vector_a[1]})", color='r')
+
+            if self.vector_b is not None:
+                ax.quiver(0, 0, self.vector_b[0], self.vector_b[1], angles='xy', scale_units='xy', scale=1, color='b', label='Vector B')
+                ax.plot(self.vector_b[0], self.vector_b[1], 'bo')  # Punto final de Vector B
+                ax.text(self.vector_b[0], self.vector_b[1], f" B({self.vector_b[0]}, {self.vector_b[1]})", color='b')
+
+            todos = [self.vector_a]
+            if self.vector_b is not None:
+                todos.append(self.vector_b)
+
+            # Calcular límites dinámicos
+            limites = np.max(np.abs(todos)) + 2
+            ax.set_xlim(-limites, limites)
+            ax.set_ylim(-limites, limites)
+
+            ax.set_aspect('equal')
+            ax.set_xlabel("Eje X")
+            ax.set_ylabel("Eje Y")
+            plt.title('Plano cartesiano con vectores y puntos finales')
+            plt.legend()
+            plt.show()
+        else:
+            messagebox.showinfo("Falta información", "Debe al menos definir el vector A.")
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
