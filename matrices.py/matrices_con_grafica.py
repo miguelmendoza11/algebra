@@ -129,15 +129,25 @@ class MatrizApp:
             messagebox.showinfo("Falta información", "Primero crea la matriz A.")
 
     def inversa(self):
-        if self.matriz_a:
-            try:
-                inversa = np.linalg.inv(self.matriz_a).tolist()
-                self.resultado_area.insert(tk.END, "\n\nMatriz Inversa de A:")
-                self.mostrar_matriz(inversa, "A⁻¹")
-            except:
-                messagebox.showerror("Error", "La matriz no tiene inversa.")
-        else:
-            messagebox.showinfo("Falta información", "Primero crea la matriz A.")
+        matrices = [("A", self.matriz_a), ("B", self.matriz_b)]
+
+        for nombre, matriz in matrices:
+            if matriz:
+                try:
+                    np_matriz = np.array(matriz)
+                    determinante = round(np.linalg.det(np_matriz), 6)
+
+                    if determinante == 0:
+                        self.resultado_area.insert(tk.END, f"\n\nLa matriz {nombre} **NO tiene inversa** (det = 0)\n")
+                        continue
+
+                    inversa = np.linalg.inv(np_matriz).tolist()
+                    self.resultado_area.insert(tk.END, f"\n\nMatriz Inversa de {nombre}:")
+                    self.mostrar_matriz(inversa, f"{nombre}⁻¹")
+                except Exception as e:
+                    messagebox.showerror("Error", f"No se pudo calcular la inversa de {nombre}: {e}")
+            else:
+                self.resultado_area.insert(tk.END, f"\n\nMatriz {nombre} no definida.")
 
     def metodo_cramer(self):
         if self.matriz_a:
@@ -320,7 +330,9 @@ class MatrizApp:
         else:
             messagebox.showinfo("Falta información", "Primero define el vector A.")
 
-    def traslacion(self):
+    
+    
+    def traslacion(self,):
         if self.vector_a is not None:
             dx = simpledialog.askfloat("Traslación", "Ingrese el desplazamiento en X:")
             dy = simpledialog.askfloat("Traslación", "Ingrese el desplazamiento en Y:")
@@ -329,9 +341,12 @@ class MatrizApp:
         else:
             messagebox.showinfo("Falta información", "Primero define el vector A.")
 
-    def _graficar_transformacion(self, original, transformado, titulo):
-        plt.figure()
-        ax = plt.gca()
+            dx = simpledialog.askfloat("Traslación", "Ingrese el desplazamiento en X:")
+            dy = simpledialog.askfloat("Traslación", "Ingrese el desplazamiento en Y:")
+            transformado = self.vector_a + np.array([dx, dy])
+            self._graficar_transformacion(self.vector_a, transformado, "Traslación")
+        
+            ax = plt.gca()
         ax.axhline(0, color='black', linewidth=1)
         ax.axvline(0, color='black', linewidth=1)
         ax.grid(True, which='both', linestyle='--', linewidth=0.5)
@@ -358,8 +373,62 @@ class MatrizApp:
 
     
 
+
+    def _graficar_transformacion(self, original, transformado, titulo):
+        plt.figure()
+        ax = plt.gca()
+        ax.axhline(0, color='black', linewidth=1)
+        ax.axvline(0, color='black', linewidth=1)
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Vector A
+        ax.quiver(0, 0, original[0], original[1], angles='xy', scale_units='xy', scale=1, color='r', label='Vector A (Original)')
+        ax.plot(original[0], original[1], 'ro')
+        ax.text(original[0], original[1], f"A({original[0]:.2f}, {original[1]:.2f})", color='r')
+
+        ax.quiver(0, 0, transformado[0], transformado[1], angles='xy', scale_units='xy', scale=1, color='g', label='Vector A (Transformado)')
+        ax.plot(transformado[0], transformado[1], 'go')
+        ax.text(transformado[0], transformado[1], f"T({transformado[0]:.2f}, {transformado[1]:.2f})", color='g')
+
+        # Vector B
+        if self.vector_b is not None:
+            if titulo.startswith("Reflexión sobre eje X"):
+                b_trans = np.array([self.vector_b[0], -self.vector_b[1]])
+            elif titulo.startswith("Reflexión sobre eje Y"):
+                b_trans = np.array([-self.vector_b[0], self.vector_b[1]])
+            elif titulo.startswith("Rotación"):
+                angulo = float(titulo.split(" ")[-1].replace("°", ""))
+                rad = np.radians(angulo)
+                rot_matrix = np.array([[np.cos(rad), -np.sin(rad)], [np.sin(rad), np.cos(rad)]])
+                b_trans = rot_matrix @ self.vector_b
+            elif titulo == "Traslación":
+                dx = transformado[0] - original[0]
+                dy = transformado[1] - original[1]
+                b_trans = self.vector_b + np.array([dx, dy])
+            else:
+                b_trans = self.vector_b
+
+            ax.quiver(0, 0, self.vector_b[0], self.vector_b[1], angles='xy', scale_units='xy', scale=1, color='b', label='Vector B (Original)')
+            ax.plot(self.vector_b[0], self.vector_b[1], 'bo')
+            ax.text(self.vector_b[0], self.vector_b[1], f"B({self.vector_b[0]:.2f}, {self.vector_b[1]:.2f})", color='b')
+
+            ax.quiver(0, 0, b_trans[0], b_trans[1], angles='xy', scale_units='xy', scale=1, color='orange', label='Vector B (Transformado)')
+            ax.plot(b_trans[0], b_trans[1], 'o', color='orange')
+            ax.text(b_trans[0], b_trans[1], f"T({b_trans[0]:.2f}, {b_trans[1]:.2f})", color='orange')
+
+        limites = np.max(np.abs([original, transformado] + ([self.vector_b, b_trans] if self.vector_b is not None else []))) + 2
+        ax.set_xlim(-limites, limites)
+        ax.set_ylim(-limites, limites)
+
+        ax.set_aspect('equal')
+        ax.set_xlabel("Eje X")
+        ax.set_ylabel("Eje Y")
+        plt.title(titulo)
+        ax.legend()
+        plt.show()
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = MatrizApp(root)
     root.mainloop()
-
