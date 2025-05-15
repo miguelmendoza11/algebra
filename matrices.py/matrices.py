@@ -1,172 +1,160 @@
-
+import tkinter as tk
+from tkinter import ttk, simpledialog, messagebox, scrolledtext
 import numpy as np
+import math
 
-class OperacionesMatrices:
-    def __init__(self):
-        pass
-    
-    def imprimir_matriz(self, matriz, nombre="Matriz"):
-        print(f"\n{nombre}:")
-        for fila in matriz:
-            print(" ".join(f"{x:8.3f}" for x in fila))
-    
-    def crear_matriz(self, filas, columnas, mensaje="Ingrese los elementos de la matriz:"):
-        print(mensaje)
-        matriz = []
+class CalculadoraAlgebraLineal:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Calculadora de Álgebra Lineal")
+        self.root.geometry("900x700")
+
+        self.notebook = ttk.Notebook(root)
+        self.notebook.pack(expand=True, fill="both")
+
+        self.setup_matrices_tab()
+        self.setup_sistemas_tab()
+        self.setup_vectores_tab()
+
+    # -------------------------------------------
+    def setup_matrices_tab(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Matrices")
+
+        self.output_matriz = scrolledtext.ScrolledText(frame, width=100, height=30)
+        self.output_matriz.pack()
+
+        btn = ttk.Button(frame, text="Iniciar operaciones con matrices", command=self.operaciones_matrices)
+        btn.pack(pady=10)
+
+    def operaciones_matrices(self):
+        try:
+            filas = int(simpledialog.askstring("Filas", "Ingrese número de filas:"))
+            columnas = int(simpledialog.askstring("Columnas", "Ingrese número de columnas:"))
+        except:
+            messagebox.showerror("Error", "El tamaño de las matrices debe ser un número entero")
+            return
+
+        matriz_a = np.zeros((filas, columnas))
+        matriz_b = np.zeros((filas, columnas))
         for i in range(filas):
-            fila = []
             for j in range(columnas):
-                valor = float(input(f"Elemento [{i+1},{j+1}]: "))
-                fila.append(valor)
-            matriz.append(fila)
-        return matriz
-    
-    def suma_matrices(self, matriz_a, matriz_b):
-        if len(matriz_a) != len(matriz_b) or len(matriz_a[0]) != len(matriz_b[0]):
-            return "Error: Las matrices deben tener las mismas dimensiones para sumarlas"
-        
-        return [[matriz_a[i][j] + matriz_b[i][j] for j in range(len(matriz_a[0]))] for i in range(len(matriz_a))]
-    
-    def multiplicacion_matrices(self, matriz_a, matriz_b):
-        if len(matriz_a[0]) != len(matriz_b):
-            return "Error: El número de columnas de la primera matriz debe ser igual al número de filas de la segunda matriz"
-        
-        return [[sum(matriz_a[i][k] * matriz_b[k][j] for k in range(len(matriz_a[0]))) for j in range(len(matriz_b[0]))] for i in range(len(matriz_a))]
-    
-    def determinante_sarrus(self, matriz):
-        if len(matriz) != 3 or len(matriz[0]) != 3:
-            return "Error: El método de Sarrus solo funciona para matrices 3x3"
-        
-        return (matriz[0][0] * matriz[1][1] * matriz[2][2] + matriz[0][1] * matriz[1][2] * matriz[2][0] + matriz[0][2] * matriz[1][0] * matriz[2][1]) - \
-               (matriz[0][2] * matriz[1][1] * matriz[2][0] + matriz[0][0] * matriz[1][2] * matriz[2][1] + matriz[0][1] * matriz[1][0] * matriz[2][2])
-    
-    def determinante_cofactores(self, matriz):
-        if len(matriz) == 2:
-            return matriz[0][0] * matriz[1][1] - matriz[0][1] * matriz[1][0]
-        
-        return sum((-1) ** j * matriz[0][j] * self.determinante_cofactores([fila[:j] + fila[j+1:] for fila in matriz[1:]]) for j in range(len(matriz)))
-    
-    def matriz_inversa(self, matriz):
-        det = self.determinante_cofactores(matriz)
-        if abs(det) < 1e-10:
-            return "Error: La matriz no tiene inversa (determinante = 0)"
-        
-        adjunta = [[(-1) ** (i+j) * self.determinante_cofactores([fila[:j] + fila[j+1:] for fila in matriz[:i] + matriz[i+1:]]) for j in range(len(matriz))] for i in range(len(matriz))]
-        return [[adjunta[j][i] / det for j in range(len(matriz))] for i in range(len(matriz))]
+                matriz_a[i][j] = float(simpledialog.askstring("Matriz A", f"A[{i+1},{j+1}] = "))
+                matriz_b[i][j] = float(simpledialog.askstring("Matriz B", f"B[{i+1},{j+1}] = "))
 
-    def metodo_cramer(self, matriz_coeficientes, vector_constantes):
-        n = len(matriz_coeficientes)
-        
-        if any(len(fila) != n for fila in matriz_coeficientes) or len(vector_constantes) != n:
-            return "Error: La matriz debe ser cuadrada y el vector de constantes debe tener la misma longitud"
-        
-        det_matriz = self.determinante_cofactores(matriz_coeficientes)
-        if abs(det_matriz) < 1e-10:
-            return "Error: El sistema no tiene solución única (determinante = 0)"
-        
-        soluciones = []
-        for i in range(n):
-            matriz_modificada = [fila[:] for fila in matriz_coeficientes]
-            for j in range(n):
-                matriz_modificada[j][i] = vector_constantes[j]
-            det_modificada = self.determinante_cofactores(matriz_modificada)
-            soluciones.append(det_modificada / det_matriz)
-        
-        return soluciones
+        texto = f"Matriz A:\n{matriz_a}\n\nMatriz B:\n{matriz_b}\n\n"
 
-
-def menu():
-    print("Iniciando programa...")
-    operaciones = OperacionesMatrices()
-    matriz_a = None
-    matriz_b = None
-    
-    while True:
-        print("\n==== OPERACIONES CON MATRICES ====")
-        print("1. Crear matriz A")
-        print("2. Crear matriz B")
-        print("3. Suma de matrices")
-        print("4. Multiplicación de matrices")
-        print("5. Determinante por Sarrus (matriz 3x3)")
-        print("6. Determinante por cofactores")
-        print("7. Matriz inversa")
-        print("8. Resolver sistema con método de Cramer")
-        print("0. Salir")
-        
-        opcion = input("\nSeleccione una opción: ")
-        
-        if opcion == "1":
-            filas = int(input("Número de filas para matriz A: "))
-            columnas = int(input("Número de columnas para matriz A: "))
-            matriz_a = operaciones.crear_matriz(filas, columnas, "Ingrese los elementos de la matriz A:")
-            operaciones.imprimir_matriz(matriz_a, "Matriz A")
-        
-        elif opcion == "2":
-            filas = int(input("Número de filas para matriz B: "))
-            columnas = int(input("Número de columnas para matriz B: "))
-            matriz_b = operaciones.crear_matriz(filas, columnas, "Ingrese los elementos de la matriz B:")
-            operaciones.imprimir_matriz(matriz_b, "Matriz B")
-        
-        elif opcion == "3":
-            if matriz_a is None or matriz_b is None:
-                print("Error: Primero debe crear ambas matrices")
-                continue
-            resultado = operaciones.suma_matrices(matriz_a, matriz_b)
-            operaciones.imprimir_matriz(resultado, "Resultado de la suma")
-        
-        elif opcion == "4":
-            if matriz_a is None or matriz_b is None:
-                print("Error: Primero debe crear ambas matrices")
-                continue
-            resultado = operaciones.multiplicacion_matrices(matriz_a, matriz_b)
-            operaciones.imprimir_matriz(resultado, "Resultado de la multiplicación")
-        
-        elif opcion == "5":
-            if matriz_a is None:
-                print("Error: Primero debe crear la matriz A")
-                continue
-            print(f"\nDeterminante (Sarrus): {operaciones.determinante_sarrus(matriz_a)}")
-        
-        elif opcion == "6":
-            if matriz_a is None:
-                print("Error: Primero debe crear la matriz A")
-                continue
-            print(f"\nDeterminante (Cofactores): {operaciones.determinante_cofactores(matriz_a)}")
-        
-        elif opcion == "7":
-            if matriz_a is None:
-                print("Error: Primero debe crear la matriz A")
-                continue
-            resultado = operaciones.matriz_inversa(matriz_a)
-            if isinstance(resultado, str): 
-                print(resultado)
-            else:
-                operaciones.imprimir_matriz(resultado, "Matriz Inversa")
-
-        elif opcion == "8":
-            n = int(input("Ingrese el número de incógnitas (n): "))
-            print("Ingrese los coeficientes del sistema (matriz A):")
-            matriz_coef = operaciones.crear_matriz(n, n)
-            print("Ingrese el vector de constantes (vector B):")
-            vector_b = []
-            for i in range(n):
-                valor = float(input(f"Elemento [{i+1}]: "))
-                vector_b.append(valor)
-            
-            resultado = operaciones.metodo_cramer(matriz_coef, vector_b)
-            if isinstance(resultado, str):
-                print(resultado)
-            else:
-                print("\nSoluciones del sistema:")
-                for idx, valor in enumerate(resultado):
-                    print(f"x{idx+1} = {valor:.5f}")
-
-        elif opcion == "0":
-            print("¡Gracias por usar el programa!")
-            break
-        
+        if matriz_a.shape == matriz_b.shape:
+            suma = matriz_a + matriz_b
+            texto += f"Suma A + B:\n{suma}\n\n"
         else:
-            print("Opción no válida. Intente de nuevo.")
+            texto += "Las matrices no se pueden sumar (tamaños diferentes).\n\n"
 
+        try:
+            multiplicacion = np.dot(matriz_a, matriz_b)
+            texto += f"Multiplicación A x B:\n{multiplicacion}\n"
+        except:
+            texto += "Las matrices no se pueden multiplicar (tamaños no coherentes).\n"
+
+        self.output_matriz.delete("1.0", tk.END)
+        self.output_matriz.insert(tk.END, texto)
+
+    # -------------------------------------------
+    def setup_sistemas_tab(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Sistemas de Ecuaciones")
+
+        self.output_sistemas = scrolledtext.ScrolledText(frame, width=100, height=30)
+        self.output_sistemas.pack()
+
+        btn = ttk.Button(frame, text="Resolver sistema", command=self.resolver_sistema)
+        btn.pack(pady=10)
+
+    def resolver_sistema(self):
+        n = int(simpledialog.askstring("Tamaño", "Ingrese el tamaño del sistema (2 para 2x2, 3 para 3x3):"))
+        A = np.zeros((n, n))
+        B = np.zeros((n, 1))
+        for i in range(n):
+            for j in range(n):
+                A[i][j] = float(simpledialog.askstring("Matriz A", f"A[{i+1},{j+1}] = "))
+            B[i][0] = float(simpledialog.askstring("Vector B", f"B[{i+1}] = "))
+
+        texto = f"Matriz A:\n{A}\n\nVector B:\n{B}\n\n"
+        det_a = np.linalg.det(A)
+        texto += f"Determinante |A| = {det_a:.2f}\n"
+
+        if det_a == 0:
+            texto += "El sistema no tiene solución |A| = 0 y la matriz A no tiene inversa.\n"
+        else:
+            # Método de Cramer
+            soluciones_cramer = []
+            for i in range(n):
+                Ai = np.copy(A)
+                Ai[:, i] = B[:, 0]
+                det_ai = np.linalg.det(Ai)
+                soluciones_cramer.append(det_ai / det_a)
+                texto += f"Matriz A{i+1} (con columna {i+1} reemplazada):\n{Ai}\n"
+                texto += f"Determinante |A{i+1}| = {det_ai:.2f}\n"
+            texto += f"Solución con Cramer: {soluciones_cramer}\n\n"
+
+            # Método de matriz inversa
+            A_inv = np.linalg.inv(A)
+            X = np.dot(A_inv, B)
+            texto += f"Inversa de A:\n{A_inv}\n"
+            texto += f"Solución con matriz inversa: {X.flatten()}\n"
+
+        self.output_sistemas.delete("1.0", tk.END)
+        self.output_sistemas.insert(tk.END, texto)
+
+    # -------------------------------------------
+    def setup_vectores_tab(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Vectores")
+
+        self.output_vectores = scrolledtext.ScrolledText(frame, width=100, height=30)
+        self.output_vectores.pack()
+
+        btn = ttk.Button(frame, text="Operar vectores", command=self.operar_vectores)
+        btn.pack(pady=10)
+
+    def operar_vectores(self):
+        mag1 = float(simpledialog.askstring("Vector A", "Magnitud del vector A:"))
+        ang1_deg = float(simpledialog.askstring("Vector A", "Ángulo (°) del vector A:"))
+        mag2 = float(simpledialog.askstring("Vector B", "Magnitud del vector B:"))
+        ang2_deg = float(simpledialog.askstring("Vector B", "Ángulo (°) del vector B:"))
+
+        ang1_rad = math.radians(ang1_deg)
+        ang2_rad = math.radians(ang2_deg)
+
+        Ax, Ay = mag1 * math.cos(ang1_rad), mag1 * math.sin(ang1_rad)
+        Bx, By = mag2 * math.cos(ang2_rad), mag2 * math.sin(ang2_rad)
+
+        texto = f"Vector A: ({Ax:.2f}, {Ay:.2f})\nVector B: ({Bx:.2f}, {By:.2f})\n\n"
+
+        # Suma
+        Cx, Cy = Ax + Bx, Ay + By
+        mag_C = math.sqrt(Cx**2 + Cy**2)
+        ang_C = math.degrees(math.atan2(Cy, Cx))
+        texto += f"Suma: ({Cx:.2f}, {Cy:.2f})\nMagnitud: {mag_C:.2f}, Ángulo: {ang_C:.2f}°\n\n"
+
+        # Producto punto
+        dot = Ax * Bx + Ay * By
+        texto += f"Producto punto: {dot:.2f}\n"
+
+        # Ángulo entre vectores
+        cos_theta = dot / (mag1 * mag2)
+        angle_between = math.degrees(math.acos(cos_theta))
+        texto += f"Ángulo entre vectores: {angle_between:.2f}°\n\n"
+
+        # Producto cruz (2D se considera solo la componente z)
+        cross = Ax * By - Ay * Bx
+        texto += f"Producto cruz (componente Z): {cross:.2f}\n"
+
+        self.output_vectores.delete("1.0", tk.END)
+        self.output_vectores.insert(tk.END, texto)
+
+# Ejecutar aplicación
 if __name__ == "__main__":
-    menu()
+    root = tk.Tk()
+    app = CalculadoraAlgebraLineal(root)
+    root.mainloop()
